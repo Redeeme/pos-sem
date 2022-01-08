@@ -23,8 +23,12 @@ typedef struct {
 WINDOW *main_Window;
 
 typedef struct data {
-    int *buffer;
+    int *buffer_r;
+    int *buffer_w;
     int sockfd;
+    pthread_mutex_t *mutex;
+    pthread_cond_t *canRead;
+    bool reading;
 } DATA;
 
 void *reader(void *args) {
@@ -32,11 +36,26 @@ void *reader(void *args) {
     int buffer[WRITE_BUFFER_LENGTH];
     int sockfd = data->sockfd;
     int n;
-    bzero(buffer, WRITE_BUFFER_LENGTH * sizeof(int));
-    n = read(sockfd, buffer, WRITE_BUFFER_LENGTH * sizeof(int));
-    memcpy(data->buffer, buffer, WRITE_BUFFER_LENGTH * sizeof(int));
+    do {
+        bzero(buffer,WRITE_BUFFER_LENGTH*sizeof(int));
+        n = read(sockfd, buffer, WRITE_BUFFER_LENGTH);
+        pthread_mutex_lock(data->mutex);
+        memcpy(data->buffer_r,buffer,WRITE_BUFFER_LENGTH);
+        data->reading  = true;
+        pthread_mutex_unlock(data->mutex);
+        pthread_cond_signal(data->canRead);
+        if (n < 0)
+        {
+            perror("Error reading from socket");
+            break;
+        }
+    }while(n > 0);
+}
+void *writer(void *args) {
+    DATA *data = (DATA *) args;
+    int n = write(data->sockfd, data->buffer_w, READ_BUFFER_LENGTH);
     if (n < 0) {
-        perror("Error reading from socket");
+        perror("Error writing to socket");
     }
 }
 
@@ -126,7 +145,7 @@ void initialize() {
 }
 
 
-int snek(int socket) {
+int snek(DATA *data) {
     initialize();
     int snakeLengthP1 = 3;
     int snakeLengthP2 = 3;
@@ -136,8 +155,8 @@ int snek(int socket) {
 
     position *snakeP1 = malloc((snakeLengthP1 * 2) * sizeof(int));//allocation for snake
     position *snakeP2 = malloc((snakeLengthP2 * 2) * sizeof(int));//allocation for snake
-
-
+    DATA *dataa = (DATA *) data;
+    //sleep(10);
     int buffer_w[READ_BUFFER_LENGTH];
     int buffer[WRITE_BUFFER_LENGTH];
     snakeP1[0].x = 3;
@@ -158,13 +177,18 @@ int snek(int socket) {
     printSnake(snakeP2, snakeLengthP2,2);
     wrefresh(main_Window);
     while (1) {
+
         int in = wgetch(main_Window);
         box(main_Window, 0, 0);
         if (in != ERR)
             keyP1 = in;
-        bzero(buffer, WRITE_BUFFER_LENGTH * sizeof(int));
-        n = read(socket, buffer, WRITE_BUFFER_LENGTH * sizeof(int));
-        keyP2 = buffer[0];
+        pthread_mutex_lock(dataa->mutex);
+        while(!dataa->reading) {
+            pthread_cond_wait(dataa->canRead,dataa->mutex);
+        }
+        dataa->reading = false;
+        keyP2 = dataa->buffer_r[0];
+        pthread_mutex_unlock(dataa->mutex);
         wrefresh(main_Window);
         eraseSnake(snakeP1, snakeLengthP1);
         eraseSnake(snakeP2, snakeLengthP2);
@@ -177,8 +201,8 @@ int snek(int socket) {
             snakeP2[i].y = snakeP2[i - 1].y;
         }
 
-        directionOfSnake(keyP2, snakeP1);
-        directionOfSnake(keyP1, snakeP2);
+        directionOfSnake(keyP1, snakeP1);
+        directionOfSnake(keyP2, snakeP2);
 
 
         printSnake(snakeP1, snakeLengthP1,1);
@@ -255,7 +279,8 @@ int snek(int socket) {
                 buffer_w[i + 7] = -1;
             }
         }
-        int n = write(socket, buffer_w, READ_BUFFER_LENGTH);
+        memcpy(data->buffer_w,buffer_w,READ_BUFFER_LENGTH*sizeof(int));
+        writer(dataa);
         if (n < 0) {
             perror("Error writing to socket");
         }
@@ -263,6 +288,7 @@ int snek(int socket) {
         }
         endwin();
     }
+
 
     int main(int argc, char *argv[]) {
         printf("omg");
@@ -323,9 +349,25 @@ int snek(int socket) {
             return 5;
         }*/
 
+        int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
+        int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
+        pthread_t t_read;
+        pthread_mutex_t mutex;
+        pthread_cond_t canRead;
 
-        snek(newsockfd);
+        pthread_cond_init(&canRead,NULL);
 
+        pthread_mutex_init(&mutex,NULL);
+
+        DATA data = {buffer_r,buffer_w,newsockfd,&mutex,&canRead,false};
+
+        pthread_create(&t_read,NULL, &reader, &data);
+        snek(&data);
+        pthread_join(t_read,NULL);
+
+
+        pthread_cond_destroy(&canRead);
+        pthread_mutex_destroy(&mutex);
         endwin();
         close(newsockfd);
         close(sockfd);
