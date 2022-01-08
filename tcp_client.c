@@ -115,16 +115,18 @@ int snek(int socket) {
                     wattron(main_Window, COLOR_PAIR(4));
                     printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(4));
+                    tmp1++;
                 }else {
                     wattron(main_Window, COLOR_PAIR(2));
                     printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(2));
+
                 }
                 i += 2;
             }
             tmp++;
             tmp1++;
-            if (tmp == 2){
+            if (tmp == 3){
                 wattron(main_Window, COLOR_PAIR(3));
                 printText(buffer_w[i],buffer_w[i+1],'o');
                 wattroff(main_Window, COLOR_PAIR(3));

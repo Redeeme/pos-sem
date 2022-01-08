@@ -241,8 +241,8 @@ int snek(int socket) {
                 tmp++;
                 if (i == ((snakeLengthP1 + snakeLengthP2) * 2)){
                     i += 2;
-                    //buffer_w[i] = -1;
-                    //buffer_w[i + 1] = -1;
+                    buffer_w[i] = -1;
+                    buffer_w[i + 1] = -1;
                 }
             }else{
                 buffer_w[i] = fruit.x;
