@@ -27,23 +27,28 @@ typedef struct data {
     int *buffer_w;
     int sockfd;
     pthread_mutex_t *mutex;
-    pthread_cond_t *canRead,*canWrite;
+    pthread_cond_t *canRead;
     bool reading;
 } DATA;
 
 void *reader(void *args) {
     DATA *data = (DATA *) args;
-
-    while (1) {
+    int buffer[READ_BUFFER_LENGTH];
+    int n;
+    do {
+        bzero(buffer,READ_BUFFER_LENGTH*sizeof(int));
+        n = read(data->sockfd, buffer, READ_BUFFER_LENGTH);
         pthread_mutex_lock(data->mutex);
-        int n = read(data->sockfd, data->buffer_r, WRITE_BUFFER_LENGTH * sizeof(int));
-        if (n < 0) {
-            perror("Error reading from socket");
-        }
-        data->reading = true;
+        memcpy(data->buffer_r,buffer,READ_BUFFER_LENGTH);
+        data->reading  = true;
         pthread_mutex_unlock(data->mutex);
         pthread_cond_signal(data->canRead);
-    }
+        if (n < 0)
+        {
+            perror("Error reading from socket");
+            break;
+        }
+    }while(n > 0);
 }
 
 
@@ -92,8 +97,8 @@ int snek(DATA *data) {
         box(main_Window,0,0);
         if( in != ERR )
             keyP2 = in;
-        dataa->buffer_w[0] = keyP2;
 
+        dataa->buffer_w[0] = keyP2;
         writer(dataa);
 
         for (int i = 1; i < AREA_SIZE_WIDTH - 1; ++i) {
@@ -107,24 +112,25 @@ int snek(DATA *data) {
             pthread_cond_wait(dataa->canRead,dataa->mutex);
         }
         dataa->reading=false;
+        memcpy(buffer_w,dataa->buffer_r,READ_BUFFER_LENGTH);
         pthread_mutex_unlock(dataa->mutex);
         int tmp = 0;
         int tmp1 = 0;
         for (int i = 0; i < READ_BUFFER_LENGTH; i+=2) {
-            while(dataa->buffer_r[i] != ERR){
+            while(buffer_w[i] != ERR){
                 if (i == 0) {
                     wattron(main_Window, COLOR_PAIR(1));
-                    printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
+                    printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(1));
                     tmp1++;
                 }else if (tmp1==2){
                     wattron(main_Window, COLOR_PAIR(4));
-                    printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
+                    printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(4));
                     tmp1++;
                 }else {
                     wattron(main_Window, COLOR_PAIR(2));
-                    printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
+                    printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(2));
 
                 }
@@ -134,7 +140,7 @@ int snek(DATA *data) {
             tmp1++;
             if (tmp == 3){
                 wattron(main_Window, COLOR_PAIR(3));
-                printText(dataa->buffer_w[i],dataa->buffer_w[i+1],'o');
+                printText(buffer_w[i],buffer_w[i+1],'o');
                 wattroff(main_Window, COLOR_PAIR(3));
                 break;
             }
@@ -189,27 +195,23 @@ int main(int argc, char *argv[])
     }
     int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
     int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
-    pthread_t t_write, t_read;
+    pthread_t t_read;
     pthread_mutex_t mutex;
-    pthread_cond_t canRead,canWrite;
+    pthread_cond_t canRead;
 
     pthread_cond_init(&canRead,NULL);
-    pthread_cond_init(&canWrite,NULL);
+
     pthread_mutex_init(&mutex,NULL);
 
-    DATA data = {buffer_r,buffer_w,sockfd,&mutex,&canRead,&canWrite,false};
-    pthread_create(&t_write,NULL, &writer, &data);
+    DATA data = {buffer_r,buffer_w,sockfd,&mutex,&canRead,false};
+
     pthread_create(&t_read,NULL, &reader, &data);
 
     snek(&data);
 
-    pthread_join(t_write,NULL);
     pthread_join(t_read,NULL);
 
 
-
-
-    pthread_cond_destroy(&canWrite);
     pthread_cond_destroy(&canRead);
     pthread_mutex_destroy(&mutex);
     free(buffer_w);
