@@ -74,14 +74,18 @@ position printFood(position fruit) {
     return fruit;
 }
 
-void printSnake(position *snake, int length) {
+void printSnake(position *snake, int length,int type) {
     for (int i = 0; i < length; i++) {
-        if (i == 0) {
+        if (i == 0 && type == 1) {
             wattron(main_Window, COLOR_PAIR(1));
             printText(snake[i].x, snake[i].y, '0');
             wattroff(main_Window, COLOR_PAIR(1));
-            refresh();
-        } else {
+        } else if(i == 0 && type == 2){
+            wattron(main_Window, COLOR_PAIR(4));
+            printText(snake[i].x, snake[i].y, '0');
+            wattroff(main_Window, COLOR_PAIR(4));
+        }
+        else {
             wattron(main_Window, COLOR_PAIR(2));
             printText(snake[i].x, snake[i].y, '0');
             wattroff(main_Window, COLOR_PAIR(2));
@@ -114,6 +118,7 @@ void initialize() {
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
     init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(4, COLOR_GREEN, COLOR_BLACK);
     int startx = (80 - AREA_SIZE_WIDTH) / 2;
     int starty = (24 - AREA_SIZE_HEIGHT) / 2;
     main_Window = newwin(AREA_SIZE_HEIGHT, AREA_SIZE_WIDTH, starty, startx);
@@ -149,8 +154,8 @@ int snek(int socket) {
     snakeP2[2].y = 2;//snake starting pos
     fruit = printFood(fruit);//spawn first food
     int n = 0;
-    printSnake(snakeP1, snakeLengthP1);
-    printSnake(snakeP2, snakeLengthP2);
+    printSnake(snakeP1, snakeLengthP1,1);
+    printSnake(snakeP2, snakeLengthP2,2);
     wrefresh(main_Window);
     while (1) {
         int in = wgetch(main_Window);
@@ -176,8 +181,8 @@ int snek(int socket) {
         directionOfSnake(keyP1, snakeP2);
 
 
-        printSnake(snakeP1, snakeLengthP1);
-        printSnake(snakeP2, snakeLengthP2);
+        printSnake(snakeP1, snakeLengthP1,1);
+        printSnake(snakeP2, snakeLengthP2,2);
 
 
         if (fruit.x == snakeP1[0].x && fruit.y == snakeP1[0].y) {

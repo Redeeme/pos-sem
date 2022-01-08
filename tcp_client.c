@@ -106,11 +106,15 @@ int snek(int socket) {
         int tmp1 = 0;
         for (int i = 0; i < READ_BUFFER_LENGTH; i+=2) {
             while(buffer_w[i] != ERR){
-                if (i == 0||tmp1==2) {
+                if (i == 0) {
+                    wattron(main_Window, COLOR_PAIR(1));
+                    printText(buffer_w[i], buffer_w[i + 1], '0');
+                    wattroff(main_Window, COLOR_PAIR(1));
+                    tmp1++;
+                }else if (tmp1==2){
                     wattron(main_Window, COLOR_PAIR(4));
                     printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(4));
-                    tmp1++;
                 }else {
                     wattron(main_Window, COLOR_PAIR(2));
                     printText(buffer_w[i], buffer_w[i + 1], '0');
