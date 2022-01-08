@@ -1,0 +1,1 @@
+/usr/bin/cc  -g   CMakeFiles/klientf.dir/klient.c.o  -o klientf 

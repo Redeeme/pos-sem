@@ -1,0 +1,1 @@
+/usr/bin/cc -g CMakeFiles/cvicenie7.dir/Snek.c.o -o cvicenie7 

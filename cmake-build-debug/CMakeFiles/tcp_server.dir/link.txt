@@ -1,0 +1,1 @@
+/usr/bin/cc -g CMakeFiles/tcp_server.dir/tcp_server.c.o -o tcp_server  -lcurses /usr/lib/x86_64-linux-gnu/libform.so -lpthread 
