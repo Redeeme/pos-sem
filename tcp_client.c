@@ -121,6 +121,7 @@ int snek(DATA *data) {
                     wattron(main_Window, COLOR_PAIR(4));
                     printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(4));
+                    tmp1++;
                 }else {
                     wattron(main_Window, COLOR_PAIR(2));
                     printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
@@ -130,7 +131,7 @@ int snek(DATA *data) {
             }
             tmp++;
             tmp1++;
-            if (tmp == 2){
+            if (tmp == 3){
                 wattron(main_Window, COLOR_PAIR(3));
                 printText(dataa->buffer_w[i],dataa->buffer_w[i+1],'o');
                 wattroff(main_Window, COLOR_PAIR(3));
