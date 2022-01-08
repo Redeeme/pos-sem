@@ -109,7 +109,7 @@ int snek(int socket) {
                 if (i == 0||tmp1==2) {
                     wattron(main_Window, COLOR_PAIR(4));
                     printText(buffer_w[i], buffer_w[i + 1], '0');
-                    wattroff(main_Window, COLOR_PAIR(1));
+                    wattroff(main_Window, COLOR_PAIR(4));
                     tmp1++;
                 }else {
                     wattron(main_Window, COLOR_PAIR(2));
