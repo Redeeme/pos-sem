@@ -64,6 +64,7 @@ void initialize(){
     init_pair( 1,COLOR_RED,COLOR_BLACK);
     init_pair( 2,COLOR_YELLOW,COLOR_BLACK );
     init_pair( 3,COLOR_MAGENTA,COLOR_BLACK );
+    init_pair( 4,COLOR_GREEN,COLOR_BLACK );
     int startx = (80 - AREA_SIZE_WIDTH) / 2;
     int starty = (24 - AREA_SIZE_HEIGHT) / 2;
     main_Window = newwin(AREA_SIZE_HEIGHT, AREA_SIZE_WIDTH, starty, startx);
@@ -106,7 +107,7 @@ int snek(int socket) {
         for (int i = 0; i < READ_BUFFER_LENGTH; i+=2) {
             while(buffer_w[i] != ERR){
                 if (i == 0||tmp1==2) {
-                    wattron(main_Window, COLOR_PAIR(1));
+                    wattron(main_Window, COLOR_PAIR(4));
                     printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(1));
                     tmp1++;
