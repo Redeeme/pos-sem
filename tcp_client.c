@@ -23,27 +23,33 @@ typedef struct {
 WINDOW *main_Window;
 
 typedef struct data {
-    int *buffer;
+    int *buffer_r;
+    int *buffer_w;
     int sockfd;
+    pthread_mutex_t *mutex;
+    pthread_cond_t *canRead,*canWrite;
+    bool reading;
 } DATA;
 
 void *reader(void *args) {
     DATA *data = (DATA *) args;
-    int buffer[WRITE_BUFFER_LENGTH];
-    int sockfd = data->sockfd;
-    int n;
-    bzero(buffer, WRITE_BUFFER_LENGTH * sizeof(int));
-    n = read(sockfd, buffer, WRITE_BUFFER_LENGTH * sizeof(int));
-    memcpy(data->buffer, buffer, WRITE_BUFFER_LENGTH * sizeof(int));
-    if (n < 0) {
-        perror("Error reading from socket");
+
+    while (1) {
+        pthread_mutex_lock(data->mutex);
+        int n = read(data->sockfd, data->buffer_r, WRITE_BUFFER_LENGTH * sizeof(int));
+        if (n < 0) {
+            perror("Error reading from socket");
+        }
+        data->reading = true;
+        pthread_mutex_unlock(data->mutex);
+        pthread_cond_signal(data->canRead);
     }
 }
 
 
 void *writer(void *args) {
     DATA *data = (DATA *) args;
-    int n = write(data->sockfd, data->buffer, READ_BUFFER_LENGTH);
+    int n = write(data->sockfd, data->buffer_w, WRITE_BUFFER_LENGTH);
     if (n < 0) {
         perror("Error writing to socket");
     }
@@ -71,8 +77,9 @@ void initialize(){
     box(main_Window,0,0);
 }
 
-int snek(int socket) {
+int snek(DATA *data) {
     initialize();
+    DATA *dataa = (DATA *) data;
     int keyP2 = 's';
 
     int buffer[WRITE_BUFFER_LENGTH];
@@ -85,12 +92,9 @@ int snek(int socket) {
         box(main_Window,0,0);
         if( in != ERR )
             keyP2 = in;
-        buffer[0] = keyP2;
+        dataa->buffer_w[0] = keyP2;
 
-        int n = write(socket, buffer, WRITE_BUFFER_LENGTH);
-        if (n < 0) {
-            perror("Error writing to socket");
-        }
+        writer(dataa);
 
         for (int i = 1; i < AREA_SIZE_WIDTH - 1; ++i) {
             for (int j = 1; j < AREA_SIZE_HEIGHT - 1; ++j) {
@@ -98,26 +102,28 @@ int snek(int socket) {
             }
         }
         // citanie dat od servera
-        n = read(socket, buffer_w, READ_BUFFER_LENGTH * sizeof(int));
-        if (n < 0) {
-            perror("Error reading from socket");
+        pthread_mutex_lock(dataa->mutex);
+        while(!dataa->reading) {
+            pthread_cond_wait(dataa->canRead,dataa->mutex);
         }
+        dataa->reading=false;
+        pthread_mutex_unlock(dataa->mutex);
         int tmp = 0;
         int tmp1 = 0;
         for (int i = 0; i < READ_BUFFER_LENGTH; i+=2) {
-            while(buffer_w[i] != ERR){
+            while(dataa->buffer_r[i] != ERR){
                 if (i == 0) {
                     wattron(main_Window, COLOR_PAIR(1));
-                    printText(buffer_w[i], buffer_w[i + 1], '0');
+                    printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(1));
                     tmp1++;
                 }else if (tmp1==2){
                     wattron(main_Window, COLOR_PAIR(4));
-                    printText(buffer_w[i], buffer_w[i + 1], '0');
+                    printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(4));
                 }else {
                     wattron(main_Window, COLOR_PAIR(2));
-                    printText(buffer_w[i], buffer_w[i + 1], '0');
+                    printText(dataa->buffer_r[i], dataa->buffer_r[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(2));
                 }
                 i += 2;
@@ -126,7 +132,7 @@ int snek(int socket) {
             tmp1++;
             if (tmp == 2){
                 wattron(main_Window, COLOR_PAIR(3));
-                printText(buffer_w[i],buffer_w[i+1],'o');
+                printText(dataa->buffer_w[i],dataa->buffer_w[i+1],'o');
                 wattroff(main_Window, COLOR_PAIR(3));
                 break;
             }
@@ -179,34 +185,34 @@ int main(int argc, char *argv[])
         perror("Error connecting to socket");
         return 4;
     }
+    int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
+    int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
+    pthread_t t_write, t_read;
+    pthread_mutex_t mutex;
+    pthread_cond_t canRead,canWrite;
 
-    /*printf("Please enter a message: ");
-    bzero(buffer,256);
-    fgets(buffer, 255, stdin);
+    pthread_cond_init(&canRead,NULL);
+    pthread_cond_init(&canWrite,NULL);
+    pthread_mutex_init(&mutex,NULL);
 
-    n = write(sockfd, buffer, strlen(buffer));
-    if (n < 0)
-    {
-        perror("Error writing to socket");
-        return 5;
-    }
+    DATA data = {buffer_r,buffer_w,sockfd,&mutex,&canRead,&canWrite,false};
+    pthread_create(&t_write,NULL, &writer, &data);
+    pthread_create(&t_read,NULL, &reader, &data);
 
-    bzero(buffer,256);
-    n = read(sockfd, buffer, 255);
-    if (n < 0)
-    {
-        perror("Error reading from socket");
-        return 6;
-    }*/
+    snek(&data);
 
-    //printf("%s\n",buffer);
-    DATA rdata = {(int*)malloc(WRITE_BUFFER_LENGTH*sizeof(int)),sockfd};
-    DATA wdata = {(int*)malloc(READ_BUFFER_LENGTH*sizeof(int)),sockfd};
+    pthread_join(t_write,NULL);
+    pthread_join(t_read,NULL);
 
 
-    snek(sockfd);
+
+
+    pthread_cond_destroy(&canWrite);
+    pthread_cond_destroy(&canRead);
+    pthread_mutex_destroy(&mutex);
+    free(buffer_w);
+    free(buffer_r);
     endwin();
-    close(sockfd);
     close(sockfd);
 
     return 0;
