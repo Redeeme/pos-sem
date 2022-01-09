@@ -126,6 +126,17 @@ int selfColision(position *snake, int length) {
     }
     return 0;
 }
+void destruct(DATA* data,position* snake1, position* snake2){
+    endwin();
+    pthread_cond_destroy(data->canRead);
+    pthread_mutex_destroy(data->mutex);
+    close(data->sockfd);
+    free(snake1);
+    free(snake2);
+    endwin();
+    exit(0);
+}
+
 void initialize() {
     initscr();
     srand(time(NULL));
@@ -237,15 +248,13 @@ int snek(DATA *data) {
         }
         if (snakeP1[0].x < 1 || snakeP1[0].x > AREA_SIZE_WIDTH - 2 || snakeP1[0].y < 1 ||
             snakeP1[0].y > AREA_SIZE_HEIGHT - 2 || selfColision(snakeP1, snakeLengthP1) == ERR) {
-            endwin();
-            free(snakeP1);
-            exit(0);
+            printf("\nSKORE HRACA1: %d     SKORE HRACA2: %d\t\t\t\t\t",snakeLengthP1,snakeLengthP2);
+            destruct(dataa,snakeP1,snakeP2);
         }
         if (snakeP2[0].x < 1 || snakeP2[0].x > AREA_SIZE_WIDTH - 2 || snakeP2[0].y < 1 ||
             snakeP2[0].y > AREA_SIZE_HEIGHT - 2 || selfColision(snakeP2, snakeLengthP2) == ERR) {
-            endwin();
-            free(snakeP2);
-            exit(0);
+            printf("\nSKORE HRACA1: %d     SKORE HRACA2: %d\t\t\t\t\t",snakeLengthP1,snakeLengthP2);
+            destruct(dataa,snakeP1,snakeP2);
         }
         int tmp = 0;
         for (int i = 0; i <= ((snakeLengthP1 + snakeLengthP2) * 2) + 4; i += 2) {//snake100snake200f00xxxx
@@ -291,13 +300,11 @@ int snek(DATA *data) {
 
 
     int main(int argc, char *argv[]) {
-        printf("omg");
         int sockfd, newsockfd;
         socklen_t cli_len;
         struct sockaddr_in serv_addr, cli_addr;
         int n;
         char buffer[256];
-        printf("omg");
         if (argc < 2)
         {
             fprintf(stderr,"usage %s port\n", argv[0]);
@@ -308,20 +315,17 @@ int snek(DATA *data) {
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_addr.s_addr = INADDR_ANY;
         serv_addr.sin_port = htons(atoi(argv[1]));
-        printf("omg");
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd < 0)
         {
             perror("Error creating socket");
             return 1;
         }
-        printf("omg");
         if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
         {
             perror("Error binding socket address");
             return 2;
         }
-        printf("omg");
         listen(sockfd, 5);
         cli_len = sizeof(cli_addr);
 
@@ -331,23 +335,14 @@ int snek(DATA *data) {
             perror("ERROR on accept");
             return 3;
         }
-        /*printf("omg");
-        bzero(buffer,256);
-        n = read(newsockfd, buffer, 255);*/
-        /*if (n < 0)
-        {
-            perror("Error reading from socket");
-            return 4;
-        }
-        printf("Here is the message: %s\n", buffer);
 
-        const char* msg = "I got your message";
-        n = write(newsockfd, msg, strlen(msg)+1);
-        if (n < 0)
-        {
-            perror("Error writing to socket");
-            return 5;
-        }*/
+        printf("\n|--------------------------------------------------------|\n"
+               "VITAJTE V HRE SNAKE, HRAC 2 SA UZ NAPOJIL HRA ZACNE ONEDLHO...\n"
+               " OVLADNIE HRY -> w -> hore\n"
+               "             -> a -> dolava\n"
+               "             -> s -> dole\n"
+               "             -> d -> doprava\n");
+        sleep(1);
 
         int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
         int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
