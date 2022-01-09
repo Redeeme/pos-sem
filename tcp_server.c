@@ -331,23 +331,13 @@ int snek(DATA *data) {
             perror("ERROR on accept");
             return 3;
         }
-        /*printf("omg");
-        bzero(buffer,256);
-        n = read(newsockfd, buffer, 255);*/
-        /*if (n < 0)
-        {
-            perror("Error reading from socket");
-            return 4;
-        }
-        printf("Here is the message: %s\n", buffer);
-
-        const char* msg = "I got your message";
-        n = write(newsockfd, msg, strlen(msg)+1);
-        if (n < 0)
-        {
-            perror("Error writing to socket");
-            return 5;
-        }*/
+        printf("\n|--------------------------------------------------------|\n"
+               "VITAJTE V HRE SNAKE, HRAC 2 SA UZ NAPOJIL HRA ZACNE ONEDLHO...\n"
+               " OVLADNIE HRY -> w -> hore\n"
+               "             -> a -> dolava\n"
+               "             -> s -> dole\n"
+               "             -> d -> doprava\n");
+        sleep(10);
 
         int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
         int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));

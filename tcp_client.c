@@ -194,6 +194,13 @@ int main(int argc, char *argv[])
         perror("Error connecting to socket");
         return 4;
     }
+    printf("\n|--------------------------------------------------------|\n"
+           "VITAJTE V HRE SNAKE, HRAC 1 SA UZ NAPOJIL HRA ZACNE ONEDLHO...\n"
+           " OVLADNIE HRY -> w -> hore\n"
+           "             -> a -> dolava\n"
+           "             -> s -> dole\n"
+           "             -> d -> doprava\n");
+    sleep(10);
     int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
     int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
     pthread_t t_read;
