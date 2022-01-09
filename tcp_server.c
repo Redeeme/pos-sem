@@ -9,6 +9,7 @@
 #include <time.h>
 #include <pthread.h>
 
+//2414
 #define AREA_SIZE_HEIGHT 22
 #define AREA_SIZE_WIDTH 42
 #define READ_BUFFER_LENGTH 1610
@@ -126,12 +127,15 @@ int selfColision(position *snake, int length) {
     return 0;
 }
 void destruct(DATA* data,position* snake1, position* snake2){
-    endwin();
     pthread_cond_destroy(data->canRead);
     pthread_mutex_destroy(data->mutex);
     close(data->sockfd);
     free(snake1);
     free(snake2);
+//    free(data->buffer_w);
+//    free(data->buffer_r);
+
+
     endwin();
     exit(0);
 }
@@ -153,10 +157,47 @@ void initialize() {
     main_Window = newwin(AREA_SIZE_HEIGHT, AREA_SIZE_WIDTH, starty, startx);
     box(main_Window, 0, 0);
 }
-
+void writeToClient(DATA* data, int snakeLengthP1, int snakeLengthP2,
+                   position* snakeP1, position* snakeP2, position fruit, int type){
+    int buffer_w[READ_BUFFER_LENGTH];
+    int tmp = 0;
+    for (int i = 0; i <= ((snakeLengthP1 + snakeLengthP2) * 2) + 4; i += 2) {//snake100snake200f00xxxx
+        if (i < snakeLengthP1 * 2) {
+            buffer_w[i] = snakeP1[tmp].x;
+            buffer_w[i + 1] = snakeP1[tmp].y;
+            tmp++;
+            if (i  == (snakeLengthP1 - 1) * 2) {
+                i += 2;
+                buffer_w[i] = -1;
+                buffer_w[i + 1] = -1;
+                tmp = 0;
+            }
+        } else if (i > snakeLengthP1 * 2 && i <= ((snakeLengthP1 + snakeLengthP2) * 2)){
+            buffer_w[i] = snakeP2[tmp].x;
+            buffer_w[i + 1] = snakeP2[tmp].y;
+            tmp++;
+            if (i == ((snakeLengthP1 + snakeLengthP2) * 2)){
+                i += 2;
+                buffer_w[i] = -1;
+                buffer_w[i + 1] = -1;
+            }
+        }else{
+            buffer_w[i] = fruit.x;
+            buffer_w[i + 1] = fruit.y;
+            buffer_w[i + 2] = snakeLengthP1;
+            buffer_w[i + 3] = snakeLengthP2;
+            buffer_w[i+4] = type;
+            buffer_w[i + 5] = 0;
+            buffer_w[i + 6] = -1;
+            buffer_w[i + 7] = -1;
+        }
+    }
+    memcpy(data->buffer_w,buffer_w,READ_BUFFER_LENGTH*sizeof(int));
+}
 
 int snek(DATA *data) {
     initialize();
+    int type = 1;
     int snakeLengthP1 = 3;
     int snakeLengthP2 = 3;
     int keyP1 = 'd';
@@ -166,20 +207,21 @@ int snek(DATA *data) {
     position *snakeP1 = malloc((snakeLengthP1 * 2) * sizeof(int));//allocation for snake
     position *snakeP2 = malloc((snakeLengthP2 * 2) * sizeof(int));//allocation for snake
     DATA *dataa = (DATA *) data;
-    int buffer_w[READ_BUFFER_LENGTH];
+    //sleep(10);
+
     int buffer[WRITE_BUFFER_LENGTH];
     snakeP1[0].x = 3;
     snakeP1[0].y = 1;
     snakeP1[1].x = 2;
     snakeP1[1].y = 1;
     snakeP1[2].x = 1;
-    snakeP1[2].y = 1;
+    snakeP1[2].y = 1;//snake starting pos
     snakeP2[0].x = 6;
     snakeP2[0].y = 2;
     snakeP2[1].x = 5;
     snakeP2[1].y = 2;
     snakeP2[2].x = 4;
-    snakeP2[2].y = 2;
+    snakeP2[2].y = 2;//snake starting pos
     fruit = printFood(fruit);//spawn first food
     int n = 0;
     printSnake(snakeP1, snakeLengthP1,1);
@@ -245,128 +287,99 @@ int snek(DATA *data) {
             fruit = printFood(fruit);
         }
         if (snakeP1[0].x < 1 || snakeP1[0].x > AREA_SIZE_WIDTH - 2 || snakeP1[0].y < 1 ||
-            snakeP1[0].y > AREA_SIZE_HEIGHT - 2 || selfColision(snakeP1, snakeLengthP1) == ERR) {
+            snakeP1[0].y > AREA_SIZE_HEIGHT - 2) {
             printf("\nSKORE HRACA1: %d     SKORE HRACA2: %d\t\t\t\t\t",snakeLengthP1,snakeLengthP2);
+            writeToClient(dataa, snakeLengthP1, snakeLengthP2, snakeP1, snakeP2, fruit, 0);
             destruct(dataa,snakeP1,snakeP2);
+        }else{
+            writeToClient(dataa, snakeLengthP1, snakeLengthP2, snakeP1, snakeP2, fruit, 1);
         }
         if (snakeP2[0].x < 1 || snakeP2[0].x > AREA_SIZE_WIDTH - 2 || snakeP2[0].y < 1 ||
-            snakeP2[0].y > AREA_SIZE_HEIGHT - 2 || selfColision(snakeP2, snakeLengthP2) == ERR) {
+            snakeP2[0].y > AREA_SIZE_HEIGHT - 2) {
             printf("\nSKORE HRACA1: %d     SKORE HRACA2: %d\t\t\t\t\t",snakeLengthP1,snakeLengthP2);
+            writeToClient(dataa, snakeLengthP1, snakeLengthP2, snakeP1, snakeP2, fruit, 0);
             destruct(dataa,snakeP1,snakeP2);
+        }else{
+            writeToClient(dataa, snakeLengthP1, snakeLengthP2, snakeP1, snakeP2, fruit, 1);
         }
-        int tmp = 0;
-        for (int i = 0; i <= ((snakeLengthP1 + snakeLengthP2) * 2) + 4; i += 2) {//snake100snake200f00xxxx
-            if (i < snakeLengthP1 * 2) {
-                buffer_w[i] = snakeP1[tmp].x;
-                buffer_w[i + 1] = snakeP1[tmp].y;
-                tmp++;
-                if (i  == (snakeLengthP1 - 1) * 2) {
-                    i += 2;
-                    buffer_w[i] = -1;
-                    buffer_w[i + 1] = -1;
-                    tmp = 0;
-                }
-            } else if (i > snakeLengthP1 * 2 && i <= ((snakeLengthP1 + snakeLengthP2) * 2)){
-                buffer_w[i] = snakeP2[tmp].x;
-                buffer_w[i + 1] = snakeP2[tmp].y;
-                tmp++;
-                if (i == ((snakeLengthP1 + snakeLengthP2) * 2)){
-                    i += 2;
-                    buffer_w[i] = -1;
-                    buffer_w[i + 1] = -1;
-                }
-            }else{
-                buffer_w[i] = fruit.x;
-                buffer_w[i + 1] = fruit.y;
-                buffer_w[i + 2] = snakeLengthP1;
-                buffer_w[i + 3] = snakeLengthP2;
-                buffer_w[i + 4] = 1;
-                buffer_w[i + 5] = 0;
-                buffer_w[i + 6] = -1;
-                buffer_w[i + 7] = -1;
-            }
-        }
-        memcpy(data->buffer_w,buffer_w,READ_BUFFER_LENGTH*sizeof(int));
+
         writer(dataa);
         if (n < 0) {
             perror("Error writing to socket");
         }
         wrefresh(main_Window);
-        }
-        endwin();
+    }
+    endwin();
+}
 
+
+int main(int argc, char *argv[]) {
+    int sockfd, newsockfd;
+    socklen_t cli_len;
+    struct sockaddr_in serv_addr, cli_addr;
+    int n;
+    char buffer[256];
+    if (argc < 2)
+    {
+        fprintf(stderr,"usage %s port\n", argv[0]);
+        return 1;
     }
 
-
-    int main(int argc, char *argv[]) {
-        int sockfd, newsockfd;
-        socklen_t cli_len;
-        struct sockaddr_in serv_addr, cli_addr;
-        int n;
-        char buffer[256];
-        if (argc < 2)
-        {
-            fprintf(stderr,"usage %s port\n", argv[0]);
-            return 1;
-        }
-
-        bzero((char*)&serv_addr, sizeof(serv_addr));
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr.s_addr = INADDR_ANY;
-        serv_addr.sin_port = htons(atoi(argv[1]));
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd < 0)
-        {
-            perror("Error creating socket");
-            return 1;
-        }
-        if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-        {
-            perror("Error binding socket address");
-            return 2;
-        }
-        listen(sockfd, 5);
-        cli_len = sizeof(cli_addr);
-
-        newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &cli_len);
-        if (newsockfd < 0)
-        {
-            perror("ERROR on accept");
-            return 3;
-        }
-
-        system("clear");
-
-        printf("\n|--------------------------------------------------------|\n"
-               "VITAJTE V HRE SNAKE, HRAC 2 SA UZ NAPOJIL HRA ZACNE ONEDLHO...\n"
-               " OVLADNIE HRY -> w -> hore\n"
-               "             -> a -> dolava\n"
-               "             -> s -> dole\n"
-               "             -> d -> doprava\n");
-        sleep(5);
-
-        int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
-        int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
-        pthread_t t_read;
-        pthread_mutex_t mutex;
-        pthread_cond_t canRead;
-
-        pthread_cond_init(&canRead,NULL);
-
-        pthread_mutex_init(&mutex,NULL);
-
-        DATA data = {buffer_r,buffer_w,newsockfd,&mutex,&canRead,false};
-
-        pthread_create(&t_read,NULL, &reader, &data);
-        snek(&data);
-        pthread_join(t_read,NULL);
-
-
-        pthread_cond_destroy(&canRead);
-        pthread_mutex_destroy(&mutex);
-        endwin();
-        close(newsockfd);
-        close(sockfd);
-
-        return 0;
+    bzero((char*)&serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(atoi(argv[1]));
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
+    {
+        perror("Error creating socket");
+        return 1;
     }
+    if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("Error binding socket address");
+        return 2;
+    }
+    listen(sockfd, 5);
+    cli_len = sizeof(cli_addr);
+
+    newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &cli_len);
+    if (newsockfd < 0)
+    {
+        perror("ERROR on accept");
+        return 3;
+    }
+
+    printf("\n|--------------------------------------------------------|\n"
+           "VITAJTE V HRE SNAKE, HRAC 2 SA UZ NAPOJIL HRA ZACNE ONEDLHO...\n"
+           " OVLADNIE HRY -> w -> hore\n"
+           "             -> a -> dolava\n"
+           "             -> s -> dole\n"
+           "             -> d -> doprava\n");
+    sleep(1);
+
+    int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
+    int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
+    pthread_t t_read;
+    pthread_mutex_t mutex;
+    pthread_cond_t canRead;
+
+    pthread_cond_init(&canRead,NULL);
+
+    pthread_mutex_init(&mutex,NULL);
+
+    DATA data = {buffer_r,buffer_w,newsockfd,&mutex,&canRead,false};
+
+    pthread_create(&t_read,NULL, &reader, &data);
+    snek(&data);
+    pthread_join(t_read,NULL);
+
+
+    pthread_cond_destroy(&canRead);
+    pthread_mutex_destroy(&mutex);
+    endwin();
+    close(newsockfd);
+    close(sockfd);
+
+    return 0;
+}

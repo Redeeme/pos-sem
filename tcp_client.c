@@ -26,6 +26,9 @@ typedef struct data {
     int *buffer_r;
     int *buffer_w;
     int sockfd;
+    int playing;
+    int scoreP1;
+    int scoreP2;
     pthread_mutex_t *mutex;
     pthread_cond_t *canRead;
     bool reading;
@@ -46,6 +49,9 @@ void *reader(void *args) {
         if (n < 0)
         {
             perror("Error reading from socket");
+            break;
+        }
+        if(data->playing == 0){
             break;
         }
     }while(n > 0);
@@ -82,15 +88,30 @@ void initialize(){
     box(main_Window,0,0);
 }
 
+void destruct(DATA* data){
+    pthread_cond_destroy(data->canRead);
+    pthread_mutex_destroy(data->mutex);
+    close(data->sockfd);
+//    free(data->buffer_w);
+//    free(data->buffer_r);
+
+    endwin();
+    exit(0);
+}
 
 int snek(DATA *data) {
     initialize();
     DATA *dataa = (DATA *) data;
     int keyP2 = 's';
 
+    int playing = 1;
+    int snakeLength1 = 0;
+    int snakeLength2 = 0;
+
     int buffer[WRITE_BUFFER_LENGTH];
 
     int buffer_w[READ_BUFFER_LENGTH];
+
 
     while (1) {
 
@@ -144,11 +165,22 @@ int snek(DATA *data) {
                 wattron(main_Window, COLOR_PAIR(3));
                 printText(buffer_w[i],buffer_w[i+1],'o');
                 wattroff(main_Window, COLOR_PAIR(3));
+                dataa->scoreP1 = buffer_w[i+2];
+                dataa->scoreP2 = buffer_w[i+3];
+                playing = buffer_w[i+4];
+                dataa->playing = playing;
                 break;
             }
         }
-        wrefresh(main_Window);
+        int a = dataa->scoreP1;
+        int b = dataa->scoreP2;
+
+        if(playing == 0){
+            printf("\nSKORE HRACA1: %d     SKORE HRACA2: %d\t\t\t\t\t",a,b);
+            destruct(dataa);
         }
+        wrefresh(main_Window);
+    }
 }
 
 
@@ -196,7 +228,6 @@ int main(int argc, char *argv[])
         return 4;
     }
 
-    system("clear");
 
     printf("\n|--------------------------------------------------------|\n"
            "VITAJTE V HRE SNAKE, VSETCI HRACI SA NAPOJILI, HRA ZACNE ONEDLHO...\n"
@@ -204,7 +235,7 @@ int main(int argc, char *argv[])
            "             -> a -> dolava\n"
            "             -> s -> dole\n"
            "             -> d -> doprava\n");
-    sleep(5);
+    sleep(1);
 
     int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
     int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
@@ -216,7 +247,7 @@ int main(int argc, char *argv[])
 
     pthread_mutex_init(&mutex,NULL);
 
-    DATA data = {buffer_r,buffer_w,sockfd,&mutex,&canRead,false};
+    DATA data = {buffer_r,buffer_w,sockfd, 1,0,0,&mutex,&canRead,false};
 
     pthread_create(&t_read,NULL, &reader, &data);
 
@@ -224,13 +255,6 @@ int main(int argc, char *argv[])
 
     pthread_join(t_read,NULL);
 
-
-    pthread_cond_destroy(&canRead);
-    pthread_mutex_destroy(&mutex);
-    free(buffer_w);
-    free(buffer_r);
-    endwin();
-    close(sockfd);
 
 
     return 0;
