@@ -132,8 +132,8 @@ void destruct(DATA* data,position* snake1, position* snake2){
     close(data->sockfd);
     free(snake1);
     free(snake2);
-//    free(data->buffer_w);
-//    free(data->buffer_r);
+    free(data->buffer_w);
+    free(data->buffer_r);
 
 
     endwin();

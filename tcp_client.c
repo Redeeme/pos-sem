@@ -92,8 +92,8 @@ void destruct(DATA* data){
     pthread_cond_destroy(data->canRead);
     pthread_mutex_destroy(data->mutex);
     close(data->sockfd);
-//    free(data->buffer_w);
-//    free(data->buffer_r);
+    free(data->buffer_w);
+    free(data->buffer_r);
 
     endwin();
     exit(0);
