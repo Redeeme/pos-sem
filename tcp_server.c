@@ -9,7 +9,6 @@
 #include <time.h>
 #include <pthread.h>
 
-//2414
 #define AREA_SIZE_HEIGHT 22
 #define AREA_SIZE_WIDTH 42
 #define READ_BUFFER_LENGTH 1610
@@ -167,7 +166,6 @@ int snek(DATA *data) {
     position *snakeP1 = malloc((snakeLengthP1 * 2) * sizeof(int));//allocation for snake
     position *snakeP2 = malloc((snakeLengthP2 * 2) * sizeof(int));//allocation for snake
     DATA *dataa = (DATA *) data;
-    //sleep(10);
     int buffer_w[READ_BUFFER_LENGTH];
     int buffer[WRITE_BUFFER_LENGTH];
     snakeP1[0].x = 3;
@@ -175,13 +173,13 @@ int snek(DATA *data) {
     snakeP1[1].x = 2;
     snakeP1[1].y = 1;
     snakeP1[2].x = 1;
-    snakeP1[2].y = 1;//snake starting pos
+    snakeP1[2].y = 1;
     snakeP2[0].x = 6;
     snakeP2[0].y = 2;
     snakeP2[1].x = 5;
     snakeP2[1].y = 2;
     snakeP2[2].x = 4;
-    snakeP2[2].y = 2;//snake starting pos
+    snakeP2[2].y = 2;
     fruit = printFood(fruit);//spawn first food
     int n = 0;
     printSnake(snakeP1, snakeLengthP1,1);
@@ -296,6 +294,7 @@ int snek(DATA *data) {
         wrefresh(main_Window);
         }
         endwin();
+
     }
 
 
@@ -336,13 +335,15 @@ int snek(DATA *data) {
             return 3;
         }
 
+        system("clear");
+
         printf("\n|--------------------------------------------------------|\n"
                "VITAJTE V HRE SNAKE, HRAC 2 SA UZ NAPOJIL HRA ZACNE ONEDLHO...\n"
                " OVLADNIE HRY -> w -> hore\n"
                "             -> a -> dolava\n"
                "             -> s -> dole\n"
                "             -> d -> doprava\n");
-        sleep(1);
+        sleep(5);
 
         int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
         int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));

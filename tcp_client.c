@@ -82,6 +82,7 @@ void initialize(){
     box(main_Window,0,0);
 }
 
+
 int snek(DATA *data) {
     initialize();
     DATA *dataa = (DATA *) data;
@@ -195,13 +196,15 @@ int main(int argc, char *argv[])
         return 4;
     }
 
+    system("clear");
+
     printf("\n|--------------------------------------------------------|\n"
            "VITAJTE V HRE SNAKE, VSETCI HRACI SA NAPOJILI, HRA ZACNE ONEDLHO...\n"
            " OVLADNIE HRY -> w -> hore\n"
            "             -> a -> dolava\n"
            "             -> s -> dole\n"
            "             -> d -> doprava\n");
-    sleep(1);
+    sleep(5);
 
     int *buffer_w =malloc((WRITE_BUFFER_LENGTH) * sizeof(int));
     int *buffer_r =malloc((READ_BUFFER_LENGTH) * sizeof(int));
