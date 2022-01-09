@@ -280,8 +280,8 @@ int snek(DATA *data) {
             }else{
                 buffer_w[i] = fruit.x;
                 buffer_w[i + 1] = fruit.y;
-                buffer_w[i + 2] = -1;
-                buffer_w[i + 3] = -1;
+                buffer_w[i + 2] = snakeLengthP1;
+                buffer_w[i + 3] = snakeLengthP2;
                 buffer_w[i + 4] = 1;
                 buffer_w[i + 5] = 0;
                 buffer_w[i + 6] = -1;
