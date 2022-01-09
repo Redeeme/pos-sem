@@ -116,6 +116,7 @@ int snek(DATA *data) {
         pthread_mutex_unlock(dataa->mutex);
         int tmp = 0;
         int tmp1 = 0;
+
         for (int i = 0; i < READ_BUFFER_LENGTH; i+=2) {
             while(buffer_w[i] != ERR){
                 if (i == 0) {
@@ -128,17 +129,17 @@ int snek(DATA *data) {
                     printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(4));
                     tmp1++;
+                    tmp++;
                 }else {
                     wattron(main_Window, COLOR_PAIR(2));
                     printText(buffer_w[i], buffer_w[i + 1], '0');
                     wattroff(main_Window, COLOR_PAIR(2));
-
                 }
                 i += 2;
             }
-            tmp++;
             tmp1++;
-            if (tmp == 3){
+            if (tmp == 1){
+                i+=2;
                 wattron(main_Window, COLOR_PAIR(3));
                 printText(buffer_w[i],buffer_w[i+1],'o');
                 wattroff(main_Window, COLOR_PAIR(3));
